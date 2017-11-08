@@ -156,9 +156,28 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     # This function contains the logic executed when this server receives a GET request
     # This function is called AUTOMATICALLY upon reception and is executed as a thread!
     def do_GET(self):
-        print("Receiving a GET on path %s" % self.path)
-        # Here, we should check which path was requested and call the right logic based on it
-        self.do_GET_Index()
+        # Check the path and call an appropriate method to handle the request
+        if self.path == "/":
+            self.do_GET_Index()
+        elif self.path == "/board":
+            self.do_GET_Board()
+
+    def do_GET_Board(self):
+        #initialize response with empty string
+        content_data = ""
+        #read and add the chat board title and first element
+        with open("boardcontents_template.html") as content_template:
+            entry_data = ""
+            #iterate over stored chat messages
+            for k, v in self.server.store.items():
+                with open("entry_template.html") as entry_template:
+                    #collect HTML of messages
+                    entry_data += entry_template.read() % ("/entry/" + str(k), k, v)
+
+            #add the HTML of messages to the board
+            content_data = content_template.read() % ("Chat Board", entry_data)
+            #write content data to the client
+            self.wfile.write(content_data)
 
     #------------------------------------------------------------------------------------------------------
     # GET logic - specific path
@@ -167,7 +186,8 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
         # We set the response status code to 200 (OK)
         self.set_HTTP_headers(200)
         # We should do some real HTML here
-        html_reponse = "<html><head><title>Basic Skeleton</title></head><body>This is the basic HTML content when receiving a GET</body></html>"
+        html_reponse = ""
+
         #In practice, go over the entries list,
         #produce the boardcontents part,
         #then construct the full page by combining all the parts ...
@@ -198,23 +218,40 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     # Request handling - POST
     #------------------------------------------------------------------------------------------------------
     def do_POST(self):
-        print("Receiving a POST on %s" % self.path)
-        # Here, we should check which path was requested and call the right logic based on it
-        # We should also parse the data received
-        # and set the headers for the client
 
+        #if the user requested an updated board contents
         if self.path == "/board":
             # We set the response status code to 200 (OK)
             self.set_HTTP_headers(200)
-
             #add the message to storage
             postData = self.parse_POST_request()
-            if 'entry' in postData:
+            if 'entry' in postData.keys():
                 if len(postData['entry']) > 0:
-                    self.current_key += 1
-                    self.server.store()
-                    print postData['entry'][0]
-            print(postData)
+                    self.server.add_value_to_store(postData['entry'][0])
+
+        #if the user requested delete or modify
+        elif '/entry/' in self.path:
+            print("path /entry/ called")
+
+            #copy the post data
+            parseData = self.parse_POST_request()
+
+            # We set the response status code to 200 (OK)
+            self.set_HTTP_headers(200)
+
+            #get if to delete or modify
+            id = int(self.path.strip('/entry/'))
+
+            #determine operation
+            operation = parseData['delete'][0]
+
+            if operation == '1':
+                #delete message from data store
+                self.server.delete_value_in_store(id)
+            elif operation == '0':
+                #update the datastore
+                self.server.modify_value_in_store(id, parseData['entry'][0])
+
 
         # If we want to retransmit what we received to the other vessels
         retransmit = False  # Like this, we will just create infinite loops!
