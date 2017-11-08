@@ -53,6 +53,7 @@ class BlackboardServer(HTTPServer):
 #------------------------------------------------------------------------------------------------------
 	# We modify a value received in the store
 	def modify_value_in_store(self,key,value):
+		#this is a comment
 		# we modify a value in the store if it exists
 		pass
 #------------------------------------------------------------------------------------------------------
