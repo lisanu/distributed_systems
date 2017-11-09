@@ -79,7 +79,7 @@ class BlackboardServer(HTTPServer):
         try:
             # We contact vessel:PORT_NUMBER since we all use the same port
             # We can set a timeout, after which the connection fails if nothing happened
-            connection = HTTPConnection("%s:%d" % (vessel, PORT_NUMBER), timeout=30)
+            connection = HTTPConnection("%s:%d" % (vessel_ip, PORT_NUMBER), timeout=30)
             # We only use POST to send data (PUT and DELETE not supported)
             action_type = "POST"
             # We send the HTTP request
@@ -94,7 +94,7 @@ class BlackboardServer(HTTPServer):
         # We catch every possible exceptions
         except Exception as e:
             print
-            "Error while contacting %s" % vessel
+            "Error while contacting %s" % vessel_ip
             # printing the error given by Python
             print(e)
 
@@ -183,6 +183,8 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     # GET logic - specific path
     #------------------------------------------------------------------------------------------------------
     def do_GET_Index(self):
+        print("Index page called")
+        print(self.path)
         # We set the response status code to 200 (OK)
         self.set_HTTP_headers(200)
         # We should do some real HTML here
@@ -219,6 +221,10 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     #------------------------------------------------------------------------------------------------------
     def do_POST(self):
 
+        # If we want to retransmit what we received to the other vessels
+        retransmit = False  # Like this, we will just create infinite loops!
+        retransmit_data = {}
+
         #if the user requested an updated board contents
         if self.path == "/board":
             # We set the response status code to 200 (OK)
@@ -228,6 +234,12 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
             if 'entry' in postData.keys():
                 if len(postData['entry']) > 0:
                     self.server.add_value_to_store(postData['entry'][0])
+                    #flag it for retransmission
+                    retransmit = True
+                    #set the data to be retransmitted
+                    retransmit_data['action'] = 2
+                    retransmit_data['key'] = ''
+                    retransmit_data['value'] = postData['entry'][0]
 
         #if the user requested delete or modify
         elif '/entry/' in self.path:
@@ -248,19 +260,63 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
             if operation == '1':
                 #delete message from data store
                 self.server.delete_value_in_store(id)
+
+                #flag it for retransmission
+                retransmit = True
+
+                #set the data to be retransmitted
+                retransmit_data['action'] = 1
+                retransmit_data['key'] = id
+                retransmit_data['value'] = parseData['entry'][0]
+
             elif operation == '0':
                 #update the datastore
                 self.server.modify_value_in_store(id, parseData['entry'][0])
 
+                #flag it for retransmission
+                retransmit = True
 
-        # If we want to retransmit what we received to the other vessels
-        retransmit = False  # Like this, we will just create infinite loops!
+                #set the data to be retransmitted
+                retransmit_data['action'] = 1
+                retransmit_data['key'] = id
+                retransmit_data['value'] = parseData['entry'][0]
+
+        elif '/propagate' in self.path:
+            #flag it for retransmission
+            retransmit = False
+
+            #copy the post data
+            parseData = self.parse_POST_request()
+
+            print("Parsed data is ")
+            print(parseData)
+
+            # We set the response status code to 200 (OK)
+            self.set_HTTP_headers(200)
+
+            #determine operation
+            operation = parseData['action'][0]
+            key = parseData['key'][0]
+            value = parseData['value'][0]
+
+            if operation == '0':
+                #update the data store
+                self.server.modify_value_in_store(key, value)
+
+            elif operation == '1':
+                #delete message from data store
+                self.server.delete_value_in_store(key)
+
+            elif operation == '2':
+                self.server.add_value_to_store(value)
+
         if retransmit:
             # do_POST send the message only when the function finishes
             # We must then create threads if we want to do some heavy computation
             #
             # Random content
-            thread = Thread(target=self.server.propagate_value_to_vessels, args=("action", "key", "value"))
+            thread = Thread(target=self.server.propagate_value_to_vessels,
+                            args=("/propagate", retransmit_data["action"], retransmit_data["key"], retransmit_data["value"]))
             # We kill the process if we kill the server
             thread.daemon = True
             # We start the thread
