@@ -28,7 +28,7 @@ PORT_NUMBER = 80
 #------------------------------------------------------------------------------------------------------¤
 #test 2
 
-#for i in `seq 1 3`; do curl -d 'entry='${i} -X 'POST' 'http://10.0/entry'; done
+#for i in `seq 1 3`; do curl -d 'entry='${i} -X 'POST' 'http://10.0/entries'; done
 
 #------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
             for k, v in self.server.store.items():
                 with open("entry_template.html") as entry_template:
                     #collect HTML of messages
-                    entry_data += entry_template.read() % ("/entry/" + str(k), k, v)
+                    entry_data += entry_template.read() % ("/entries/" + str(k), k, v)
 
             #add the HTML of messages to the board
             content_data = content_template.read() % ("Chat Board", entry_data)
@@ -238,8 +238,8 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                     retransmit_data['value'] = postData['entry'][0]
 
         #if the user requested delete or modify
-        elif '/entry/' in self.path:
-            print("path /entry/ called")
+        elif '/entries/' in self.path:
+            print("path /entries/ called")
 
             #copy the post data
             parseData = self.parse_POST_request()
@@ -248,7 +248,7 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
             self.set_HTTP_headers(200)
 
             #get if to delete or modify
-            id = int(self.path.strip('/entry/'))
+            id = int(self.path.strip('/entries/'))
 
             #determine operation
             operation = parseData['delete'][0]
