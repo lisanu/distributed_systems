@@ -1,10 +1,10 @@
 # coding=utf-8
 # ------------------------------------------------------------------------------------------------------
-# TDA596 Labs - Server Skeleton
+# TDA596 Labs - Lab.1. server
 # server/server.py
 # Input: Node_ID total_number_of_ID
 # Student Group:
-# Student names: John Doe & John Doe
+# Student names: Karl Kangur & Lisanu Tebikew
 # ------------------------------------------------------------------------------------------------------
 # We import various libraries
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler  # Socket specifically designed to handle HTTP requests
@@ -28,7 +28,7 @@ PORT_NUMBER = 80
 #------------------------------------------------------------------------------------------------------¤
 #test 2
 
-
+#for i in `seq 1 3`; do curl -d 'entry='${i} -X 'POST' 'http://10.0/entry'; done
 
 #------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------
