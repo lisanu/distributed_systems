@@ -117,10 +117,6 @@ class BlackboardServer(HTTPServer):
 
 
 
-
-
-
-
 #------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------
 # This class implements the logic when a server receives a GET or POST request
@@ -277,7 +273,7 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                 retransmit = True
 
                 #set the data to be retransmitted
-                retransmit_data['action'] = 1
+                retransmit_data['action'] = 0
                 retransmit_data['key'] = id
                 retransmit_data['value'] = parseData['entry'][0]
 
@@ -287,9 +283,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
 
             #copy the post data
             parseData = self.parse_POST_request()
-
-            print("Parsed data is ")
-            print(parseData)
 
             # We set the response status code to 200 (OK)
             self.set_HTTP_headers(200)
@@ -301,11 +294,11 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
 
             if operation == '0':
                 #update the data store
-                self.server.modify_value_in_store(key, value)
+                self.server.modify_value_in_store(int(key), value)
 
             elif operation == '1':
                 #delete message from data store
-                self.server.delete_value_in_store(key)
+                self.server.delete_value_in_store(int(key))
 
             elif operation == '2':
                 self.server.add_value_to_store(value)
