@@ -49,7 +49,21 @@ class TestBlackBoardLab1(unittest.TestCase):
     def test_consistency(self):
         pass
 
-    def message_not_exists_in(self, message, vessel_list):
+    def message_exists_in_all(self, message, vessel_list):
+        #check that no vessel contains our message; since our system may be inconsistent
+        for i in vessel_list:
+            #create an address
+            address = "http://10.1.0." + str(i) + "/board"
+            #check a page doesn't contain a message
+            original_content = page_contents(address, "")
+            temp = original_content.read()
+            #make sure that message doenot exist in the board
+            if(message not in temp):
+                return False
+        return True
+
+
+    def message_exists_in(self, message, vessel_list):
         #check that no vessel contains our message; since our system may be inconsistent
         for i in vessel_list:
             #create an address
@@ -59,6 +73,7 @@ class TestBlackBoardLab1(unittest.TestCase):
             temp = original_content.read()
             #make sure that message doenot exist in the board
             self.assertFalse(message in temp, "Message was already in the board! delete it rerun the test")
+
 
 
     def test_add(self):
