@@ -29,6 +29,8 @@ class TestBlackBoardLab1(unittest.TestCase):
         #make sure that "hello 4" message exists
         self.test_add()
 
+        if message_exists_in_all("hee")
+
         # hello 4
         # random vessel
             # delete it from random vessel
@@ -41,6 +43,8 @@ class TestBlackBoardLab1(unittest.TestCase):
         #add hello 4
         self.test_add()
 
+        #make sure thatit exists
+
         # random vessel
             # update it from random vessel
 
@@ -49,7 +53,7 @@ class TestBlackBoardLab1(unittest.TestCase):
     def test_consistency(self):
         pass
 
-    def message_exists_in_all(self, message, vessel_list):
+    def message_exists_in_any(self, message, vessel_list):
         #check that no vessel contains our message; since our system may be inconsistent
         for i in vessel_list:
             #create an address
@@ -61,6 +65,26 @@ class TestBlackBoardLab1(unittest.TestCase):
             if(message not in temp):
                 return False
         return True
+
+    def message_exists_in(self, message, vessel_list, all=True):
+        #check that no vessel contains our message; since our system may be inconsistent
+        for i in vessel_list:
+            #create an address
+            address = "http://10.1.0." + str(i) + "/board"
+            #check a page doesn't contain a message
+            original_content = page_contents(address, "")
+            temp = original_content.read()
+            #make sure that message doenot exist in the board
+            if all:
+                if(message not in temp):
+                    return False
+            else:
+                if(message in temp):
+                    return True
+        if all:
+            return True
+        else:
+            return False
 
 
     def message_exists_in(self, message, vessel_list):
