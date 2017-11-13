@@ -60,7 +60,7 @@ class TestBlackBoardLab1(unittest.TestCase):
         sleep(5)
 
         #check the deleted message exists does not exist in any of the vessels
-        self.assertTrue(self.message_exists_in(original_message, range(1, 10), False)[0], "Message not deleted!")
+        self.assertFalse(self.message_exists_in(original_message, range(1, 10), False)[0], "Message not deleted!")
 
 
 
@@ -131,10 +131,10 @@ class TestBlackBoardLab1(unittest.TestCase):
             temp = original_content.read()
             #make sure that message doenot exist in the board
             if check_all:
-                if message not in temp:
+                if '"'+ message + '"' not in temp:
                     return False, ""
             else:
-                if message in temp:
+                if '"' + message + '"' in temp:
                     return True, temp
         if check_all:
             return True, temp
