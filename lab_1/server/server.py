@@ -272,7 +272,7 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                     #set the data to be retransmitted
                     retransmit_data['action'] = 1
                     retransmit_data['key'] = id
-                    retransmit_data['value'] = parseData['entry'][0]
+                    retransmit_data['value'] = ""
 
                 elif operation == '0':
                     #update the datastore
