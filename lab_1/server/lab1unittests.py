@@ -7,6 +7,7 @@ import sys
 import unittest
 from random import randint
 from time import sleep
+import re
 
 def page_contents(page, message, method='GET'):
     if 'POST' in method:
@@ -26,34 +27,101 @@ class TestBlackBoardLab1(unittest.TestCase):
 
 
     def test_delete(self):
-        #make sure that "hello 4" message exists
-        self.test_add()
+        original_message = "hello 4"
 
-        if message_exists_in_all("hee")
+        # check the message we want to test deleting exists, add it if it doesn't call test_add and add it!
+        # exists[0] indicates if message exists, exists_in[1] stores the contents of the board if original_message
+        # exists in the board
+        exists_in = self.message_exists_in(original_message, range(1, self.number_of_vessels))
+        if not exists_in[0]:
+            self.test_add()
 
-        # hello 4
-        # random vessel
-            # delete it from random vessel
-        # check that it does not exist in any of the vessels
+        #check that the message exists again! It should exist now!
+        exists_in = self.message_exists_in("hello 4", range(1, self.number_of_vessels))
+        self.assertTrue(exists_in[0], "Message could not be added! Check your add logic")
+
+        #extract the id of message from the returned board contents
+        id_to_modify = self.get_id_of_message(original_message, exists_in[1])
+
+        # pick up a random vessel and update the message!
+        server_address = "http://10.1.0." + str(randint(1, number_of_vessels)) + "/entries/" + id_to_modify
+        #construct data to be sent
+        post_message = {}
+        post_message['delete'] = 1
+        post_message['entry'] = ""
+
+        #send the data to the selected vessel
+        try:
+            page_contents(server_address, post_message, 'POST')
+        except HTTPError as e:
+            self.assertFalse(False)
+
+        #wait for the delete operation to be to be propagated
+        sleep(5)
+
+        #check the deleted message exists does not exist in any of the vessels
+        self.assertTrue(self.message_exists_in(original_message, range(1, 10), False)[0], "Message not deleted!")
+
 
 
     def test_update(self):
-        # ??? what if it already exists??
+        original_message = "hello 4"
+        new_message = original_message + " updated"
 
-        #add hello 4
-        self.test_add()
+        # check the message we want to test updating exists, add it if it doesn't calling message_exists_in
+        # exists[0] indicates if message exists, exists_in[1] stores the contents of the board where original_message
+        # exists in
+        exists_in = self.message_exists_in(original_message, range(1, self.number_of_vessels))
+        if not exists_in[0]:
+            self.test_add()
 
-        #make sure thatit exists
+        #check that the message exists again! It should exist now!
+        exists_in = self.message_exists_in("hello 4", range(1, self.number_of_vessels))
+        self.assertTrue(exists_in[0], "Message could not be added!")
 
-        # random vessel
-            # update it from random vessel
+        #extract the id of message from the returned board contents
+        id_to_modify = self.get_id_of_message(original_message, exists_in[1])
 
-        # check that all are updated
+        # pick up a random vessel and update the message!
+        server_address = "http://10.1.0." + str(randint(1, number_of_vessels)) + "/entries/" + id_to_modify
+        #construct data to be sent
+        post_message = {}
+        post_message['delete'] = 0
+        post_message['entry'] = new_message
 
-    def test_consistency(self):
-        pass
+        #send the data to the selected vessel
+        try:
+            page_contents(server_address, post_message, 'POST')
+        except HTTPError as e:
+            self.assertFalse(False)
 
-    def message_exists_in_any(self, message, vessel_list):
+        #wait for the message to be propagated
+        sleep(5)
+
+        #check the updated message exists in all vessels
+        self.assertTrue(self.message_exists_in(new_message, range(1, 10))[0], "Message not updated!")
+
+    def get_id_of_message(self, message, check_in):
+        #get all forms
+        forms = re.findall("<form(.*?)</form>", check_in, re.S)
+
+        #find the single form that contains the
+        enclosing_form = ""
+        for form in forms:
+            if '"'+ message + '"' in form:
+                enclosing_form = form
+                break
+
+        #start and ending of the id
+        start = enclosing_form.find("value=\"") + 7
+        end = enclosing_form.find("\" readonly")
+
+        # return the id of message in board_contents
+        # Note if the system is inconsistent, this can return different values in different vessels
+        return enclosing_form[start: end]
+
+    def message_exists_in(self, message, vessel_list, check_all=True):
+        temp = ""
         #check that no vessel contains our message; since our system may be inconsistent
         for i in vessel_list:
             #create an address
@@ -62,46 +130,21 @@ class TestBlackBoardLab1(unittest.TestCase):
             original_content = page_contents(address, "")
             temp = original_content.read()
             #make sure that message doenot exist in the board
-            if(message not in temp):
-                return False
-        return True
-
-    def message_exists_in(self, message, vessel_list, all=True):
-        #check that no vessel contains our message; since our system may be inconsistent
-        for i in vessel_list:
-            #create an address
-            address = "http://10.1.0." + str(i) + "/board"
-            #check a page doesn't contain a message
-            original_content = page_contents(address, "")
-            temp = original_content.read()
-            #make sure that message doenot exist in the board
-            if all:
-                if(message not in temp):
-                    return False
+            if check_all:
+                if message not in temp:
+                    return False, ""
             else:
-                if(message in temp):
-                    return True
-        if all:
-            return True
+                if message in temp:
+                    return True, temp
+        if check_all:
+            return True, temp
         else:
-            return False
-
-
-    def message_exists_in(self, message, vessel_list):
-        #check that no vessel contains our message; since our system may be inconsistent
-        for i in vessel_list:
-            #create an address
-            address = "http://10.1.0." + str(i) + "/board"
-            #check a page doesn't contain a message
-            original_content = page_contents(address, "")
-            temp = original_content.read()
-            #make sure that message doenot exist in the board
-            self.assertFalse(message in temp, "Message was already in the board! delete it rerun the test")
-
+            return False, ""
 
 
     def test_add(self):
         message = "hello 4"
+
         #check that no vessel contains our message; since our system may be inconsistent
         for i in range(1,number_of_vessels):
             #create an address
@@ -122,7 +165,7 @@ class TestBlackBoardLab1(unittest.TestCase):
         except HTTPError as e:
             self.assertFalse(False)
 
-        sleep(8)
+        sleep(5)
 
         #check that no vessel contains our message; since our system may be inconsistent
         for i in range(1, number_of_vessels):
