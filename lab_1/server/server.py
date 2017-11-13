@@ -17,10 +17,10 @@ from threading import Thread  # Thread Management
 #------------------------------------------------------------------------------------------------------
 
 # Global variables for HTML templates
-board_frontpage_footer_template = ""
-board_frontpage_header_template = ""
-boardcontents_template = ""
-entry_template = ""
+board_frontpage_footer_template = "server/board_frontpage_footer_template.html"
+board_frontpage_header_template = "server/board_frontpage_header_template.html"
+boardcontents_template = "server/boardcontents_template.html"
+entry_template = "server/entry_template.html"
 
 #------------------------------------------------------------------------------------------------------
 # Static variables definitions
@@ -175,11 +175,11 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
         #initialize response with empty string
         content_data = ""
         #read and add the chat board title and first element
-        with open("boardcontents_template.html") as content_template:
+        with open(boardcontents_template) as content_template:
             entry_data = ""
             #iterate over stored chat messages
             for k, v in self.server.store.items():
-                with open("entry_template.html") as entry_template:
+                with open(entry_template) as entry_template:
                     #collect HTML of messages
                     entry_data += entry_template.read() % ("/entries/" + str(k), k, v)
 
@@ -202,17 +202,25 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
         #then construct the full page by combining all the parts ...
 
         #add the header into the response
-        with open("board_frontpage_header_template.html") as header_template:
+        with open(board_frontpage_header_template) as header_template:
             header_data = header_template.read()
             html_reponse += header_data
 
         #add the initial empty board content
-        with open("boardcontents_template.html") as content_template:
-            content_data = content_template.read() % ("Chat Board", "")
+        with open(boardcontents_template) as content_template:
+            entry_data = ""
+            #iterate over stored chat messages
+            for k, v in self.server.store.items():
+                with open(entry_template) as entry_template:
+                    #collect HTML of messages
+                    entry_data += entry_template.read() % ("/entries/" + str(k), k, v)
+
+            #add the HTML of messages to the board
+            content_data = content_template.read() % ("Chat Board", entry_data)
             html_reponse += content_data
 
         #add the footer into the response
-        with open("board_frontpage_footer_template.html") as footer_template:
+        with open(board_frontpage_footer_template) as footer_template:
             footer_data = footer_template.read() % (
                 "<a href='mailto:karkan@student.chalmers.se'>karkan@student.chalmers.se</a>, "
                 "<a href='mailto:lisanu@student.chalmers.se'>lisanu@student.chalmers.se</a>")
