@@ -161,7 +161,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                 print
                 self.set_HTTP_headers(500)
                 self.wfile.write("Server Error serving the request /")
-                "Error responding to /board"
 
         elif self.path == "/board":
             try:
@@ -171,7 +170,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                 print
                 self.set_HTTP_headers(500)
                 self.wfile.write("Server Error serving the request /board")
-                "Error responding to /board"
 
     def do_GET_Board(self):
         #initialize response with empty string
@@ -196,8 +194,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     def do_GET_Index(self):
         print("Index page called")
         print(self.path)
-        # We set the response status code to 200 (OK)
-        self.set_HTTP_headers(200)
         # We should do some real HTML here
         html_reponse = ""
 
@@ -222,6 +218,8 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                 "<a href='mailto:lisanu@student.chalmers.se'>lisanu@student.chalmers.se</a>")
             html_reponse += footer_data
 
+        # We set the response status code to 200 (OK)
+        self.set_HTTP_headers(200)
         self.wfile.write(html_reponse)
 
     #------------------------------------------------------------------------------------------------------
@@ -239,8 +237,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
 
             #if the user requested an updated board contents
             if self.path == "/board":
-                # We set the response status code to 200 (OK)
-                self.set_HTTP_headers(200)
                 #add the message to storage
                 postData = self.parse_POST_request()
                 if 'entry' in postData.keys():
@@ -259,9 +255,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
 
                 #copy the post data
                 parseData = self.parse_POST_request()
-
-                # We set the response status code to 200 (OK)
-                self.set_HTTP_headers(200)
 
                 #determine operation
                 operation = parseData['delete'][0]
@@ -300,9 +293,6 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                 #copy the post data
                 parseData = self.parse_POST_request()
 
-                # We set the response status code to 200 (OK)
-                self.set_HTTP_headers(200)
-
                 #determine operation
                 operation = parseData['action'][0]
                 #get the key we found from propagation
@@ -334,13 +324,14 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
                 # We start the thread
                 thread.start()
 
+                # We set the response status code to 200 (OK)
+                self.set_HTTP_headers(200)
+
         # catch exceptions
         except Exception as e:
             print
             self.set_HTTP_headers(500)
-            self.wfile.write("Server Error serving the request")
-
-
+            self.wfile.write("Server Error processing the request")
 #------------------------------------------------------------------------------------------------------
 
 
