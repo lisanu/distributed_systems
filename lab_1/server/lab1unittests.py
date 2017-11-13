@@ -153,7 +153,7 @@ class TestBlackBoardLab1(unittest.TestCase):
             original_content = page_contents(address, "")
             temp = original_content.read()
             #make sure that message doenot exist in the board
-            self.assertFalse(message in temp, "Message was already in the board! delete it rerun the test")
+            self.assertFalse(('"' + message + '"') in temp, "Message was already in the board! delete it rerun the test")
 
         #pick a random server for posting
         server_address = "http://10.1.0." + str(randint(1, number_of_vessels)) + "/board"
