@@ -154,9 +154,24 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         # Check the path and call an appropriate method to handle the request
         if self.path == "/":
-            self.do_GET_Index()
+            try:
+                self.do_GET_Index()
+            # catch exceptions
+            except Exception as e:
+                print
+                self.set_HTTP_headers(500)
+                self.wfile.write("Server Error serving the request /")
+                "Error responding to /board"
+
         elif self.path == "/board":
-            self.do_GET_Board()
+            try:
+                self.do_GET_Board()
+            # catch exceptions
+            except Exception as e:
+                print
+                self.set_HTTP_headers(500)
+                self.wfile.write("Server Error serving the request /board")
+                "Error responding to /board"
 
     def do_GET_Board(self):
         #initialize response with empty string
@@ -217,107 +232,114 @@ class BlackboardRequestHandler(BaseHTTPRequestHandler):
     #------------------------------------------------------------------------------------------------------
     def do_POST(self):
 
-        # If we want to retransmit what we received to the other vessels
-        retransmit = False  # Like this, we will just create infinite loops!
-        retransmit_data = {}
+        try:
+            # Assume that we don't need to transmit to other vessels initially
+            retransmit = False
+            retransmit_data = {}
 
-        #if the user requested an updated board contents
-        if self.path == "/board":
-            # We set the response status code to 200 (OK)
-            self.set_HTTP_headers(200)
-            #add the message to storage
-            postData = self.parse_POST_request()
-            if 'entry' in postData.keys():
-                if len(postData['entry']) > 0:
-                    self.server.add_value_to_store(postData['entry'][0])
+            #if the user requested an updated board contents
+            if self.path == "/board":
+                # We set the response status code to 200 (OK)
+                self.set_HTTP_headers(200)
+                #add the message to storage
+                postData = self.parse_POST_request()
+                if 'entry' in postData.keys():
+                    if len(postData['entry']) > 0:
+                        self.server.add_value_to_store(postData['entry'][0])
+                        #flag it for retransmission
+                        retransmit = True
+                        #set the data to be retransmitted
+                        retransmit_data['action'] = 2
+                        retransmit_data['key'] = ''
+                        retransmit_data['value'] = postData['entry'][0]
+
+            #if the user requested delete or modify
+            elif '/entries/' in self.path:
+                print("path /entries/ called")
+
+                #copy the post data
+                parseData = self.parse_POST_request()
+
+                # We set the response status code to 200 (OK)
+                self.set_HTTP_headers(200)
+
+                #determine operation
+                operation = parseData['delete'][0]
+
+                #get the id of the element to be deleted or modified
+                id = int(self.path.strip('/entries/'))
+
+                if operation == '1':
+                    #delete message from data store
+                    self.server.delete_value_in_store(id)
+
                     #flag it for retransmission
                     retransmit = True
+
                     #set the data to be retransmitted
-                    retransmit_data['action'] = 2
-                    retransmit_data['key'] = ''
-                    retransmit_data['value'] = postData['entry'][0]
+                    retransmit_data['action'] = 1
+                    retransmit_data['key'] = id
+                    retransmit_data['value'] = parseData['entry'][0]
 
-        #if the user requested delete or modify
-        elif '/entries/' in self.path:
-            print("path /entries/ called")
+                elif operation == '0':
+                    #update the datastore
+                    self.server.modify_value_in_store(id, parseData['entry'][0])
 
-            #copy the post data
-            parseData = self.parse_POST_request()
+                    #flag it for retransmission
+                    retransmit = True
 
-            # We set the response status code to 200 (OK)
-            self.set_HTTP_headers(200)
+                    #set the data to be retransmitted
+                    retransmit_data['action'] = 0
+                    retransmit_data['key'] = id
+                    retransmit_data['value'] = parseData['entry'][0]
 
-            #get if to delete or modify
-            id = int(self.path.strip('/entries/'))
-
-            #determine operation
-            operation = parseData['delete'][0]
-
-            if operation == '1':
-                #delete message from data store
-                self.server.delete_value_in_store(id)
-
+            elif '/propagate' in self.path:
                 #flag it for retransmission
-                retransmit = True
+                retransmit = False
 
-                #set the data to be retransmitted
-                retransmit_data['action'] = 1
-                retransmit_data['key'] = id
-                retransmit_data['value'] = parseData['entry'][0]
+                #copy the post data
+                parseData = self.parse_POST_request()
 
-            elif operation == '0':
-                #update the datastore
-                self.server.modify_value_in_store(id, parseData['entry'][0])
+                # We set the response status code to 200 (OK)
+                self.set_HTTP_headers(200)
 
-                #flag it for retransmission
-                retransmit = True
+                #determine operation
+                operation = parseData['action'][0]
+                #get the key we found from propagation
+                key = parseData['key'][0]
+                #get the value we recieved from propagation
+                value = parseData['value'][0]
 
-                #set the data to be retransmitted
-                retransmit_data['action'] = 0
-                retransmit_data['key'] = id
-                retransmit_data['value'] = parseData['entry'][0]
+                if operation == '0':
+                    #update the data store
+                    self.server.modify_value_in_store(int(key), value)
 
-        elif '/propagate' in self.path:
-            #flag it for retransmission
-            retransmit = False
+                elif operation == '1':
+                    #delete message from data store
+                    self.server.delete_value_in_store(int(key))
 
-            #copy the post data
-            parseData = self.parse_POST_request()
+                elif operation == '2':
+                    self.server.add_value_to_store(value)
 
-            # We set the response status code to 200 (OK)
-            self.set_HTTP_headers(200)
+            if retransmit:
+                # do_POST send the message only when the function finishes
+                # We must then create threads if we want to do some heavy computation
+                #
+                # Random content
+                thread = Thread(target=self.server.propagate_value_to_vessels,
+                                args=("/propagate", retransmit_data["action"], retransmit_data["key"],
+                                      retransmit_data["value"]))
+                # We kill the process if we kill the server
+                thread.daemon = True
+                # We start the thread
+                thread.start()
 
-            #determine operation
-            operation = parseData['action'][0]
-            key = parseData['key'][0]
-            value = parseData['value'][0]
+        # catch exceptions
+        except Exception as e:
+            print
+            self.set_HTTP_headers(500)
+            self.wfile.write("Server Error serving the request")
 
-            if operation == '0':
-                #update the data store
-                self.server.modify_value_in_store(int(key), value)
-
-            elif operation == '1':
-                #delete message from data store
-                self.server.delete_value_in_store(int(key))
-
-            elif operation == '2':
-                self.server.add_value_to_store(value)
-
-        if retransmit:
-            # do_POST send the message only when the function finishes
-            # We must then create threads if we want to do some heavy computation
-            #
-            # Random content
-            thread = Thread(target=self.server.propagate_value_to_vessels,
-                            args=("/propagate", retransmit_data["action"], retransmit_data["key"], retransmit_data["value"]))
-            # We kill the process if we kill the server
-            thread.daemon = True
-            # We start the thread
-            thread.start()
-        #------------------------------------------------------------------------------------------------------
-        # POST Logic
-        #------------------------------------------------------------------------------------------------------
-        # We might want some functions here as well
 
 #------------------------------------------------------------------------------------------------------
 

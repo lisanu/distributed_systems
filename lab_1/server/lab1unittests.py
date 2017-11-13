@@ -26,14 +26,39 @@ class TestBlackBoardLab1(unittest.TestCase):
 
 
     def test_delete(self):
-        pass
+        #make sure that "hello 4" message exists
+        self.test_add()
+
+        # hello 4
+        # random vessel
+            # delete it from random vessel
+        # check that it does not exist in any of the vessels
+
 
     def test_update(self):
-        pass
+        # ??? what if it already exists??
+
+        #add hello 4
+        self.test_add()
+
+        # random vessel
+            # update it from random vessel
+
+        # check that all are updated
 
     def test_consistency(self):
         pass
 
+    def message_not_exists_in(self, message, vessel_list):
+        #check that no vessel contains our message; since our system may be inconsistent
+        for i in vessel_list:
+            #create an address
+            address = "http://10.1.0." + str(i) + "/board"
+            #check a page doesn't contain a message
+            original_content = page_contents(address, "")
+            temp = original_content.read()
+            #make sure that message doenot exist in the board
+            self.assertFalse(message in temp, "Message was already in the board! delete it rerun the test")
 
 
     def test_add(self):
@@ -71,14 +96,18 @@ class TestBlackBoardLab1(unittest.TestCase):
             self.assertTrue(message in content, "Message not found in vessel 10.1.0." + str(i))
 
 if __name__ == '__main__':
-    number_of_vessels = int(sys.argv[1])
+    # Checking the arguments
+    if len(sys.argv) != 2:
+        print("Arguments: Specify the number_of_vessels")
 
-    test_loader = unittest.TestLoader()
-    test_names = test_loader.getTestCaseNames(TestBlackBoardLab1)
+    else:
+        number_of_vessels = int(sys.argv[1])
+        test_loader = unittest.TestLoader()
+        test_names = test_loader.getTestCaseNames(TestBlackBoardLab1)
 
-    suite = unittest.TestSuite()
-    for test_name in test_names:
-        suite.addTest(TestBlackBoardLab1(test_name, number_of_vessels))
+        suite = unittest.TestSuite()
+        for test_name in test_names:
+            suite.addTest(TestBlackBoardLab1(test_name, number_of_vessels))
 
-    result = unittest.TextTestRunner().run(suite)
-    sys.exit(not result.wasSuccessful())
+        result = unittest.TextTestRunner().run(suite)
+        sys.exit(not result.wasSuccessful())
